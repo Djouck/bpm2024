@@ -39,7 +39,7 @@ for prova in df['Status_ALL']:
             inner_list.append('\n')
             list_to_graph = list_to_graph + inner_list
             print(list_to_graph)
-    with open(f'sub_instance_graph_{event}', 'w') as f:
+    with open(f'sub_instance_graph_{event}.g', 'w') as f:
         f.writelines(list_to_graph)
 
     event = event + 1

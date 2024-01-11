@@ -14,7 +14,7 @@ with open('PrepaidTravelCost_instance_graphs_withPromConformance.g', 'r') as fil
     print(instance_graphs[0:15])
     i = 1
     for el in instance_graphs:
-        single_graph = f'instance_graph_{i}'
+        single_graph = f'Instance_graphs/instance_graph_{i}'
         with open(single_graph, 'w') as new_file:
             new_file.writelines(el)
         i = i + 1
