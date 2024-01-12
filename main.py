@@ -36,7 +36,7 @@ outputname = 'mapping.csv'
 # fname = output_file_path
 # Write to Pandas Dataframe
 log = pm4py.read_xes(input_file_path)  # Input Filename
-print(log.columns)
+#print(log.columns)
 df = pm4py.convert_to_dataframe(log)
 print(df)
 
@@ -63,6 +63,7 @@ for i in range(0, len(df)):
 df['case_number_id_graphs'] = lista_casi
 
 # to maintain the right order of cases (in particular Start and End activity)
+"""
 for i in range(0, len(df)):
     if (df['concept:name'] == 'START')[i]:
         df['time:timestamp'][i] = sub_second(df['time:timestamp'][i])
@@ -70,6 +71,16 @@ for i in range(0, len(df)):
         df['time:timestamp'][i] = add_second(df['time:timestamp'][i])
     else:
         continue
+"""
+###____MOD_B____###
+for i in range(0, len(df)):
+    if df['concept:name'][i] == 'START':
+        df.loc[i, 'time:timestamp'] = sub_second(df['time:timestamp'][i])
+    elif df['concept:name'][i] == 'END':
+        df.loc[i, 'time:timestamp'] = add_second(df['time:timestamp'][i])
+    else:
+        continue
+
 
 
 #df_top = df.head()
@@ -139,7 +150,7 @@ inner_list = []
 
 
 for r in df.iterrows():
-    print(i)
+    #print(i)
     # <class 'tuple'> 24071 Case ID  Case 3608, Activity  START, Complete Timestamp  2010-01-13 08:40:24.999, ...
     cID = r[1]['case:Rfp-id'].strip()
     act = r[1]['concept:name'].strip()

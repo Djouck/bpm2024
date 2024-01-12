@@ -3,12 +3,19 @@ import csv
 import pandas as pd
 import networkx as nx
 import matplotlib.pyplot as plt
+import os
 
 
 df = pd.read_pickle('vivaItalia.pkl')
 
 
 mapping = pd.read_csv('mapping.csv')
+
+###____MOD_B____###
+# Will create "Sub_Instance_graphs" directory if it does not exit
+if not os.path.exists("Sub_Instance_graphs"):
+    os.makedirs("Sub_Instance_graphs")
+
 event = 0
 for prova in df['Status_ALL']:
     list_to_graph = []
@@ -34,12 +41,12 @@ for prova in df['Status_ALL']:
                                 if i not in inner_list:
                                     inner_list.append(i)
             #inner_list = [x.strip() for x in inner_list]
-            print(inner_list)
+            #print(inner_list)
             inner_list.insert(0, f'{key}\n')
             inner_list.append('\n')
             list_to_graph = list_to_graph + inner_list
-            print(list_to_graph)
-    with open(f'sub_instance_graph_{event}.g', 'w') as f:
+            #print(list_to_graph)
+    with open(f'Sub_Instance_graphs/sub_instance_graph_{event}.g', 'w') as f:
         f.writelines(list_to_graph)
 
     event = event + 1
