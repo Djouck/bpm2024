@@ -6,6 +6,11 @@ import matplotlib.pyplot as plt
 import os
 
 
+def spliter(s,spl,ind):
+    indx=[i for i,j in enumerate(s) if j==spl][ind-1]
+    return [s[:indx].strip(),s[indx+1:].strip()]
+
+
 df = pd.read_pickle('RoadFineProcess.pkl')
 
 
@@ -35,7 +40,7 @@ for prova in df['Status_ALL']:
                             if i not in inner_list:
                                 inner_list.append(i)
                         else:
-                            vertex = i.strip().split(' ')[3].split('__')
+                            vertex = spliter(i, ' ', 3)[1].split('__')
                             vertex.remove(j)
                             if vertex[0] in prova[key]:
                                 if i not in inner_list:
