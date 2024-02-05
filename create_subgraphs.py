@@ -50,6 +50,6 @@ for prova in df['Status_ALL']:
         f.writelines(list_to_graph)
 
     event = event + 1
-    if event == 500:
-        break
+    # if event == 500:
+        # break
 

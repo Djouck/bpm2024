@@ -38,12 +38,15 @@ outputname = 'mapping.csv'
 log = pm4py.read_xes(input_file_path)  # Input Filename
 #print(log.columns)
 df = pm4py.convert_to_dataframe(log)
+#df = df[0:1000]
 print(df)
 
+"""
 column_names = []
 for col in df.columns:
     column_names.append(col)
 print(column_names)
+"""
 
 # useful for mapping with instance-graphs file
 lista_casi = []
@@ -73,6 +76,7 @@ for i in range(0, len(df)):
         continue
 """
 ###____MOD_B____###
+"""
 for i in range(0, len(df)):
     if df['concept:name'][i] == 'START':
         df.loc[i, 'time:timestamp'] = sub_second(df['time:timestamp'][i])
@@ -80,7 +84,7 @@ for i in range(0, len(df)):
         df.loc[i, 'time:timestamp'] = add_second(df['time:timestamp'][i])
     else:
         continue
-
+"""
 
 
 #df_top = df.head()
@@ -131,8 +135,8 @@ df['remainingTime_days'] = [r[1]["remainingTime_sec"]/86400 for r in df.iterrows
 print(df)
 
 # order timestamps
-
-df = df.sort_values(by=['time:timestamp'])
+df['Index'] = df.index
+df = df.sort_values(by=['time:timestamp', 'Index'])
 
 # add new column "Status_ALL": for every row in dataframe, a dictionary with every running case as key and
 # occurred events per running case as value
