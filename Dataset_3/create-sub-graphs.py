@@ -23,6 +23,7 @@ if not os.path.exists("Sub_Instance_graphs"):
 
 event = 0
 for prova in df['Status_ALL']:
+    print(event)
     list_to_graph = []
     for key in prova.keys():
         graph = mapping.loc[mapping["case:concept:name"] == key]["case_number_id_graphs"].tolist()[0]

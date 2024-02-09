@@ -51,7 +51,7 @@ outputname = 'mapping.csv'
 log = pm4py.read_xes(input_file_path)
 df = pm4py.convert_to_dataframe(log)
 
-df = df[0:10000]
+#df = df[0:10000]
 
 #df = df[0:1000]
 
