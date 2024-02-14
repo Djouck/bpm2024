@@ -5,6 +5,7 @@ import graphviz
 import copy
 import gc
 import math
+import pickle
 
 
 class Event:
@@ -182,6 +183,9 @@ df = df.sort_values(by=['time:timestamp', 'Index'])
 # add new column "Status_ALL": for every row in dataframe, a dictionary with every running case as key and
 # occurred events per running case as value
 df["Status_ALL"] = None
+# mapping creation to map case ID to instance-graph ID
+mapping = df[["case:concept:name", "case_number_id_graphs"]].drop_duplicates()
+df = df[0:20000]
 
 inner_dict = dict()
 
@@ -203,8 +207,12 @@ for key in inner_dict:
         inner_dict[key].to_pickle(f'{key}.pkl')
         i = i + 1
 
-# mapping creation to map case ID to instance-graph ID
-mapping = df[["case:concept:name", "case_number_id_graphs"]].drop_duplicates()
+
+# save dictionary to pickle file
+with open("inner_dict.pickle", "wb") as file:
+    pickle.dump(inner_dict, file, pickle.HIGHEST_PROTOCOL)
+
+
 
 
 # Write to CSV

@@ -4,6 +4,7 @@ import pandas as pd
 import networkx as nx
 import matplotlib.pyplot as plt
 import os
+import pickle
 
 
 def spliter(s,spl,ind):
@@ -11,30 +12,18 @@ def spliter(s,spl,ind):
     return [s[:indx].strip(),s[indx+1:].strip()]
 
 
-df = pd.read_pickle('RoadFineProcess.pkl')
-
-
-mapping = pd.read_csv('mapping.csv')
-
-###____MOD_B____###
-# Will create "Sub_Instance_graphs" directory if it does not exit
-if not os.path.exists("Sub_Instance_graphs"):
-    os.makedirs("Sub_Instance_graphs")
-
-event = 0
-for prova in df['Status_ALL']:
+def create_sub_graph(diz):
     list_to_graph = []
-    for key in prova.keys():
+    for key in diz.keys():
         graph = mapping.loc[mapping["case:concept:name"] == key]["case_number_id_graphs"].tolist()[0]
         graph_path = f'Instance_graphs/{graph}'
-
         with open(graph_path, 'r') as file:
             testo = file.readlines()
-            #print(testo)
-            #print(prova[key])
+            # print(testo)
+            # print(prova[key])
             inner_list = []
             for i in testo:
-                for j in prova[key]:
+                for j in diz[key]:
                     if j in i:
                         if i[0] == 'v':
                             if i not in inner_list:
@@ -42,18 +31,36 @@ for prova in df['Status_ALL']:
                         else:
                             vertex = spliter(i, ' ', 3)[1].split('__')
                             vertex.remove(j)
-                            if vertex[0] in prova[key]:
+                            if vertex[0] in diz[key]:
                                 if i not in inner_list:
                                     inner_list.append(i)
-            #inner_list = [x.strip() for x in inner_list]
-            #print(inner_list)
             inner_list.insert(0, f'{key}\n')
             inner_list.append('\n')
             list_to_graph = list_to_graph + inner_list
-            #print(list_to_graph)
-    with open(f'Sub_Instance_graphs/sub_instance_graph_{event}.g', 'w') as f:
-        f.writelines(list_to_graph)
+    return list_to_graph
 
-    event = event + 1
-    if event == 500:
-        break
+
+mapping = pd.read_csv('mapping.csv')
+print("Il mapping è stato letto")
+###____MOD_B____###
+# Will create "Sub_Instance_graphs" directory if it does not exit
+if not os.path.exists("Sub_Instance_graphs"):
+    os.makedirs("Sub_Instance_graphs")
+print("La cartella è stata creata")
+with open("inner_dict.pickle", "rb") as file:
+    inner_dict = pickle.load(file)
+print('Il file pickle inner_dict è stato letto')
+event = 0
+for key in inner_dict.keys():
+    print(f"Leggo il sub-dataframe {key}")
+    df = pd.read_pickle(f'{key}.pkl')
+    print(f"Il sub-dataframe {key} è stato letto")
+    for prova in df['Status_ALL']:
+        print("Prendo il dizionario da cui estrarre il sotto-grafo")
+        print(event)
+        print("Applico la funzione create sub graph")
+        pippo = create_sub_graph(prova)
+        with open(f'Sub_Instance_graphs/sub_instance_graph_{event}.g', 'w') as f:
+            f.writelines(pippo)
+        print("Il sub-graph è stato creato")
+        event = event + 1

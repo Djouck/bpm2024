@@ -13,7 +13,7 @@ if not os.path.exists("Instance_graphs"):
     os.makedirs("Instance_graphs")
 
 # We first need to open the IG_file in reading mode
-with open('Road_Traffic_Fine_Management_Process_instance_graphs.g', 'r') as file:
+with open('road-start-event_instance_graphs.g', 'r') as file:
     reader = file.readlines()
     instance_graphs = split_list(reader, 'XP \n')
     #print(instance_graphs[0:15])
