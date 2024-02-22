@@ -53,7 +53,7 @@ print('Il file pickle inner_dict è stato letto')
 event = 0
 for key in inner_dict.keys():
     print(f"Leggo il sub-dataframe {key}")
-    df = pd.read_pickle(f'{key}.pkl')
+    df = pd.read_pickle(f'{key}_status.pkl')
     print(f"Il sub-dataframe {key} è stato letto")
     for prova in df['Status_ALL']:
         print("Prendo il dizionario da cui estrarre il sotto-grafo")

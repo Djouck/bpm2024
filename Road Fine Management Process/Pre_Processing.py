@@ -6,6 +6,7 @@ import copy
 import gc
 import math
 import pickle
+import os
 
 
 class Event:
@@ -47,6 +48,20 @@ def create_status(df, dict_occurred):
         i += 1
     df["Status_ALL"] = inner_list
     return df
+
+
+def create_cases_occurred(df, case_id, activity):
+    cases_occurred = []
+    help_list = []
+    for r in df.iterrows():
+        if r[1][case_id].strip() not in help_list:
+            help_list.append(r[1][case_id].strip())
+        else:
+            if r[1][activity].strip() == 'END':
+                help_list.remove(r[1][case_id].strip())
+        cases_occurred.append(len(help_list))
+    return cases_occurred
+
 
 def add_second(date_object):
     try:
@@ -183,28 +198,39 @@ df = df.sort_values(by=['time:timestamp', 'Index'])
 # add new column "Status_ALL": for every row in dataframe, a dictionary with every running case as key and
 # occurred events per running case as value
 df["Status_ALL"] = None
+df['cases_occurred_at_time'] = create_cases_occurred(df, case_id='case:concept:name', activity='concept:name')
+print(df['cases_occurred_at_time'])
 # mapping creation to map case ID to instance-graph ID
 mapping = df[["case:concept:name", "case_number_id_graphs"]].drop_duplicates()
-df = df[0:20000]
+# df = df[0:20000]
 
+
+if not os.path.exists("Sub_Dataframes"):
+    os.makedirs("Sub_Dataframes")
 inner_dict = dict()
-
 for k in range(0, math.ceil(len(df)/10000)):
     if (k+1)*10000 <= len(df):
         inner_dict[f'df_{k}'] = df[10000*k: 10000*(k+1)]
+        inner_dict[f'df_{k}'].to_pickle(f'Sub_Dataframes/df_{k}.pickle')
     else:
         inner_dict[f'df_{k}'] = df[10000*k:]
+        inner_dict[f'df_{k}'].to_pickle(f'Sub_Dataframes/df_{k}.pickle')
+
+if not os.path.exists("Status"):
+    os.makedirs("Status")
 
 i = 0
 for key in inner_dict:
     print(key)
     if key == 'df_0':
-        inner_dict[key] = create_status(inner_dict[key], dict_occurred=dict())
-        inner_dict[key].to_pickle(f'{key}.pkl')
+        df = pd.read_pickle(f'{key}.pickle')
+        inner_dict[key] = create_status(df, dict_occurred=dict())
+        inner_dict[key].to_pickle(f'{key}_status.pkl')
         i = i + 1
     else:
-        inner_dict[key] = create_status(inner_dict[key], dict_occurred=inner_dict[f'df_{i-1}']['Status_ALL'].iloc[-1])
-        inner_dict[key].to_pickle(f'{key}.pkl')
+        df = pd.read_pickle(f'{key}.pickle')
+        inner_dict[key] = create_status(df, dict_occurred=inner_dict[f'df_{i-1}']['Status_ALL'].iloc[-1])
+        inner_dict[key].to_pickle(f'{key}_status.pkl')
         i = i + 1
 
 
