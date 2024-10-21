@@ -191,6 +191,103 @@ mapping = df[["case:concept:name", "case_number_id_graphs"]].drop_duplicates()
 
 status = df['Status_ALL'].tolist()
 
+
+
+
+# Write to CSV
+
+mapping.to_csv(outputname)
+
+# This script is expected to separate all the instance graphs contained in
+# the txt file where all instance graphs are stored (IG_file)
+import itertools
+import os
+
+
+def split_list(lst, val):
+    return [list(group) for k, group in itertools.groupby(lst, lambda x: x == val) if not k]
+
+###____MOD_B____###
+# Will create "Instance_graphs" directory if it does not exit
+if not os.path.exists("Instance_graphs"):
+    os.makedirs("Instance_graphs")
+
+# We first need to open the IG_file in reading mode
+with open('PermitLog_SE_noSpace.g', 'r') as file:
+    reader = file.readlines()
+    instance_graphs = split_list(reader, 'XP\n')
+    #print(instance_graphs[0:15])
+    i = 1
+    for el in instance_graphs:
+        single_graph = f'Instance_graphs/instance_graph_{i}'
+        with open(single_graph, 'w') as new_file:
+            new_file.writelines(el)
+        i = i + 1
+
+# We want to create a function that creates subgraphs of instance graphs
+import csv
+import pandas as pd
+import networkx as nx
+import matplotlib.pyplot as plt
+import os
+
+
+def spliter(s,spl,ind):
+    indx=[i for i,j in enumerate(s) if j==spl][ind-1]
+    return [s[:indx].strip(),s[indx+1:].strip()]
+
+
+#df = pd.read_pickle('PermitLog_SE.pkl')
+
+
+mapping = pd.read_csv('mapping.csv')
+
+###____MOD_B____###
+# Will create "Sub_Instance_graphs" directory if it does not exit
+if not os.path.exists("Sub_Instance_graphs"):
+    os.makedirs("Sub_Instance_graphs")
+
+
+for index, row in df.iterrows():
+    prova = row['Status_ALL']
+    list_to_graph = []
+    for key in prova.keys():
+        graph = mapping.loc[mapping["case:concept:name"] == key]["case_number_id_graphs"].tolist()[0]
+        graph_path = f'Instance_graphs/{graph}'
+
+        with open(graph_path, 'r') as file:
+            testo = file.readlines()
+            # print(testo)
+            # print(prova[key])
+            inner_list = []
+            pluto = 1
+            node_list = []
+            for i in testo:
+                for j in prova[key]:
+                    if j in i:
+                        if i[0] == 'v':
+                            node = int(i.strip().split(' ')[1])
+                            if pluto == node:
+                                node_list.append(node)
+                                if i not in inner_list:
+                                    inner_list.append(i)
+                                    pluto = pluto + 1
+                        else:
+                            arc = i.strip().split(' ')[1:3]
+                            if int(arc[0]) in node_list:
+                                if int(arc[1]) in node_list:
+                                    # vertex = i.strip().split(' ')[3].split('__')
+                                    # vertex.remove(j)
+                                    # if vertex[0] in prova[key]:
+                                    if i not in inner_list:
+                                        inner_list.append(i)
+            # inner_list = [x.strip() for x in inner_list]
+            # print(inner_list)
+            inner_list.insert(0, f'{key}\n')
+            inner_list.append('\n')
+            list_to_graph = list_to_graph + inner_list
+    with open(f'Sub_Instance_graphs/sub_instance_graph_{index}.g', 'w') as f:
+        f.writelines(list_to_graph)
 df.to_pickle('PermitLog_SE.pkl')
 
 
