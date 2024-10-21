@@ -18,6 +18,6 @@ Required input: .xes and .g files
 
 
 Dataset_3 is PermitLog_SE_No_Spaces. Run only pre-processing file.
-Dataset_4 is RequestForPayment. Run only preprocessing file, except for the filename.
+Dataset_4 is RequestForPayment. Run only preprocessing file.
 
 NB Se non si vuole passare dal file pkl, si possono incollare i tre script in ordine in un unico .py file e lanciare solo quello.
