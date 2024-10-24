@@ -4,6 +4,13 @@ from datetime import datetime, timedelta
 import graphviz
 import copy
 import gc
+import itertools
+import os
+import csv
+import pandas as pd
+import networkx as nx
+import matplotlib.pyplot as plt
+import os
 
 
 class Event:
@@ -200,8 +207,7 @@ mapping.to_csv(outputname)
 
 # This script is expected to separate all the instance graphs contained in
 # the txt file where all instance graphs are stored (IG_file)
-import itertools
-import os
+
 
 
 def split_list(lst, val):
