@@ -143,6 +143,7 @@ df['remainingTime_days'] = df["remainingTime_sec"].apply(for_day)
 # There is a problem here... In ordering different activities with same time...
 # And we donot have START e END event...
 df['Index'] = df.index
+df['time:timestamp'] = df['time:timestamp'].dt.round('1s')
 df = df.sort_values(by=['time:timestamp', 'Index'])
 
 # add new column "Status_ALL": for every row in dataframe, a dictionary with every running case as key and
