@@ -1,10 +1,19 @@
+# Standard library imports
+import os
+import csv
+from datetime import datetime, timedelta
+import copy
+import itertools
+
+# Third-party library imports
 import pandas as pd
 import pm4py
-from datetime import datetime, timedelta
 import graphviz
-import copy
+import networkx as nx
+import matplotlib.pyplot as plt
 
 
+# a class storing case,activity and timestamp for each event
 class Event:
     def __init__(self, case, activity, timestamp):
         self.case = case
@@ -30,142 +39,75 @@ def sub_second(date_object):
     return result
 
 
-input_file_path = 'PrepaidTravelCost.xes'
-#output_file_path = 'PrepaidTravelCost.csv'
-outputname = 'mapping.csv'
-# fname = output_file_path
-# Write to Pandas Dataframe
-log = pm4py.read_xes(input_file_path)  # Input Filename
-#print(log.columns)
-df = pm4py.convert_to_dataframe(log)
-#df = df[0:1000]
-print(df)
+def split_list(lst, val):
+    return [list(group) for k, group in itertools.groupby(lst, lambda x: x == val) if not k]
 
-"""
-column_names = []
-for col in df.columns:
-    column_names.append(col)
-print(column_names)
-"""
+
+input_file_path = 'PrepaidTravelCost.xes'
+
+# Write to Pandas Dataframe
+log = pm4py.read_xes(input_file_path)
+df = pm4py.convert_to_dataframe(log)
+
+
+df = df[['concept:name', 'time:timestamp', 'case:Rfp-id']]
 
 # useful for mapping with instance-graphs file
-lista_casi = []
-a = 1
-for i in range(0, len(df)):
-    if i == 0:
-        lista_casi.append(f'instance_graph_{a}')
-    else:
-        val_prec = df['case:Rfp-id'][i-1]
-        val = df['case:Rfp-id'][i]
-        if val == val_prec:
-            lista_casi.append(f'instance_graph_{a}')
-        else:
-            a = a + 1
-            lista_casi.append(f'instance_graph_{a}')
+df['case_number_id_graphs'] = (
+    'instance_graph_' + (df['case:Rfp-id'] != df['case:Rfp-id'].shift()).cumsum().astype(str)
+)
 
-df['case_number_id_graphs'] = lista_casi
-
-# to maintain the right order of cases (in particular Start and End activity)
-"""
-for i in range(0, len(df)):
-    if (df['concept:name'] == 'START')[i]:
-        df['time:timestamp'][i] = sub_second(df['time:timestamp'][i])
-    elif (df['concept:name'] == 'END')[i]:
-        df['time:timestamp'][i] = add_second(df['time:timestamp'][i])
-    else:
-        continue
-"""
-###____MOD_B____###
-"""
-for i in range(0, len(df)):
-    if df['concept:name'][i] == 'START':
-        df.loc[i, 'time:timestamp'] = sub_second(df['time:timestamp'][i])
-    elif df['concept:name'][i] == 'END':
-        df.loc[i, 'time:timestamp'] = add_second(df['time:timestamp'][i])
-    else:
-        continue
-"""
-
-
-#df_top = df.head()
-#print(df_top)
-#print(df['case:Rfp-id'])
-
-# df = pd.read_csv(fname, delimiter=",", header=0)
-
-# create dictionary
-dCaTi = {}
-
+# Add the remaining time feature
 # compute a list of all the Case ID
 listaCaseID = df["case:Rfp-id"].unique()
 
-# insert last element as a string value
-for c in listaCaseID:
-    dCaTi[c] = str(max(df.loc[df["case:Rfp-id"] == c]["time:timestamp"]))#.split(".")[0]
+# Create dictionary for max timestamp per case
+dCaTi = df.groupby("case:Rfp-id")["time:timestamp"].max().astype(str).to_dict()
 
-# add a column with remaining time in seconds
-help_list = []
 
-for r in df.iterrows():
+def calculate_remaining_time(row):
     try:
-        max_time = datetime.strptime(str(dCaTi[r[1]["case:Rfp-id"]]), '%Y-%m-%d %H:%M:%S.%f%z')
+        max_time = datetime.strptime(str(dCaTi[row["case:Rfp-id"]]), '%Y-%m-%d %H:%M:%S.%f%z')
     except ValueError:
-        max_time = datetime.strptime(str(dCaTi[r[1]["case:Rfp-id"]]), '%Y-%m-%d %H:%M:%S%z')
+        max_time = datetime.strptime(str(dCaTi[row["case:Rfp-id"]]), '%Y-%m-%d %H:%M:%S%z')
     try:
-        actual_time = datetime.strptime(str(r[1]["time:timestamp"]), '%Y-%m-%d %H:%M:%S.%f%z')
+        actual_time = datetime.strptime(str(row["time:timestamp"]), '%Y-%m-%d %H:%M:%S.%f%z')
     except ValueError:
-        actual_time = datetime.strptime(str(r[1]["time:timestamp"]), '%Y-%m-%d %H:%M:%S%z')
-    seconds = (max_time-actual_time).total_seconds()
-    help_list.append(seconds)
+        actual_time = datetime.strptime(str(row["time:timestamp"]), '%Y-%m-%d %H:%M:%S%z')
+    return (max_time - actual_time).total_seconds()
 
-df['remainingTime_sec'] = help_list
-# print(df[0:20])
 
-# add columns with remaining time in minutes, hours, days
+df['remainingTime_sec'] = df.apply(calculate_remaining_time, axis=1)
 
-df['remainingTime_minutes'] = [r[1]["remainingTime_sec"]/60 for r in df.iterrows()]
-# print(df[0:20])
-df['remainingTime_hours'] = [r[1]["remainingTime_sec"]/3600 for r in df.iterrows()]
-# print(df[0:20])
-df['remainingTime_days'] = [r[1]["remainingTime_sec"]/86400 for r in df.iterrows()]
-# df['remainingTime'] = [(max_time - datetime.strptime(str(r[1]["time:timestamp"]), '%Y-%m-%d %H:%M:%S.%f%z')).total_seconds() for r in df.iterrows()]
-# print(dCaTi)
-# print(df[0:20])
 
-print(df)
+# Add columns for remaining time in minutes, hours, and days
+df['remainingTime_minutes'] = df['remainingTime_sec'] / 60
+df['remainingTime_hours'] = df['remainingTime_sec'] / 3600
+df['remainingTime_days'] = df['remainingTime_sec'] / 86400
 
-# order timestamps
+
+# ---------------------------------------------------------------------------------------
+
 df['Index'] = df.index
-df = df.sort_values(by=['time:timestamp', 'Index'])
-
-# add new column "Status_ALL": for every row in dataframe, a dictionary with every running case as key and
-# occurred events per running case as value
-df["Status_ALL"] = None
+df['time:timestamp'] = df['time:timestamp'].dt.round('1s')
+df.sort_values(by=['time:timestamp', 'Index'], inplace=True)
+# df["Status_ALL"] = None
 
 dCaLE = {}  # dictionary of Cases and List of Events occurred
-i = 0
+# i = 0
 inner_list = []
 
-#for r in df.iterrows():
-#    cID = r[1]['case:Rfp-id']
-#    act = r[1]['concept:name']
-#    date = r[1]['time:timestamp']
-#    print(cID)
-
-
-for r in df.iterrows():
-    #print(i)
-    # <class 'tuple'> 24071 Case ID  Case 3608, Activity  START, Complete Timestamp  2010-01-13 08:40:24.999, ...
-    cID = r[1]['case:Rfp-id'].strip()
-    act = r[1]['concept:name'].strip()
-    date = r[1]['time:timestamp']
+for index, r in df.iterrows():
+    cID = r['case:Rfp-id'].strip()
+    act = r['concept:name'].strip()
+    date = r['time:timestamp']
 
     ev = Event(cID, act, date)
 
     if cID in dCaLE:
-        l = copy.deepcopy(dCaLE[cID])  # .append(ev)
+        lista = copy.deepcopy(dCaLE[cID])  # .append(ev)
         newL = []
-        for item in l:
+        for item in lista:
             newL.append(item)
         newL.append(ev.activity)
 
@@ -179,38 +121,66 @@ for r in df.iterrows():
 
     inner_list.append(state)
 
-    i += 1
-
-#print(type(inner_list[7]))
-
-# print(inner_list[24071])
 df["Status_ALL"] = inner_list
-#print(inner_list[0] == inner_list[4])
-#print(df[0:20])
-
-#for i in range(len(df)):
-    #print(type(df.loc[i]['Status_ALL']))
-    #print(df.loc[i]['Status_ALL'])
 
 # mapping creation to map case ID to instance-graph ID
 mapping = df[["case:Rfp-id", "case_number_id_graphs"]].drop_duplicates()
 
 status = df['Status_ALL'].tolist()
-prova = status[23]
-#print(prova)
-#print(type(prova))
 
-#for key in prova.keys():
-    #print(key)
+if not os.path.exists("Instance_graphs"):
+    os.makedirs("Instance_graphs")
 
-df.to_pickle('vivaItalia.pkl')
-#print(df.iterrows())
+# We first need to open the IG_file in reading mode
+with open('PrepaidTravelCost_instance_graphs_withPromConformance.g', 'r') as file:
+    reader = file.readlines()
+    instance_graphs = split_list(reader, 'XP \n')
+    i = 1
+    for el in instance_graphs:
+        single_graph = f'Instance_graphs/instance_graph_{i}'
+        with open(single_graph, 'w') as new_file:
+            new_file.writelines(el)
+        i = i + 1
 
-# Write to CSV
-#df.to_csv(output_file_path)
-mapping.to_csv(outputname)
+# We want to create a function that creates sub-graphs of instance graphs
+# Will create "Sub_Instance_graphs" directory if it does not exit
+if not os.path.exists("Sub_Instance_graphs"):
+    os.makedirs("Sub_Instance_graphs")
 
-# use of pickle to memorize the dataframe and the dictionary
-# creation of graph object (with networkx ?) for each row of the column STATUS_all
-# share results with Badar
-# duplicates activity
+df.sort_values(by=['Index'], inplace=True)
+
+for index, r in df.iterrows():
+    prova = r['Status_ALL']
+    list_to_graph = []
+    for key in prova.keys():
+        graph = mapping.loc[mapping["case:Rfp-id"] == key]["case_number_id_graphs"].tolist()[0]
+        graph_path = f'Instance_graphs/{graph}'
+
+        with open(graph_path, 'r') as file:
+            testo = file.readlines()
+            inner_list = []
+            pluto = 1
+            node_list = []
+            for i in testo:
+                for j in prova[key]:
+                    if j in i:
+                        if i[0] == 'v':
+                            node = int(i.strip().split(' ')[1])
+                            if pluto == node:
+                                node_list.append(node)
+                                if i not in inner_list:
+                                    inner_list.append(i)
+                                    pluto = pluto + 1
+                        else:
+                            arc = i.strip().split(' ')[1:3]
+                            if int(arc[0]) in node_list:
+                                if int(arc[1]) in node_list:
+                                    if i not in inner_list:
+                                        inner_list.append(i)
+            inner_list.insert(0, f'{key}\n')
+            inner_list.append('\n')
+            list_to_graph = list_to_graph + inner_list
+    with open(f'Sub_Instance_graphs/sub_instance_graph_{index}.g', 'w') as f:
+        f.writelines(list_to_graph)
+
+df.to_csv('log_ordered_by_index')
