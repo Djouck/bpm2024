@@ -252,6 +252,9 @@ mapping = pd.read_csv('mapping.csv')
 if not os.path.exists("Sub_Instance_graphs"):
     os.makedirs("Sub_Instance_graphs")
 
+
+df.sort_values(by=['Index'], inplace=True)
+
 event = 0
 for index, row in df.iterrows():
     prova = row['Status_ALL']
@@ -294,3 +297,5 @@ for index, row in df.iterrows():
             # print(list_to_graph)
     with open(f'Sub_Instance_graphs/sub_instance_graph_{index}.g', 'w') as f:
         f.writelines(list_to_graph)
+
+df.to_csv('log_ordered_by_index')
