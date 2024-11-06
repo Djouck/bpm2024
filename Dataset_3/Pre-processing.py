@@ -200,17 +200,6 @@ mapping = df[["case:concept:name", "case_number_id_graphs"]].drop_duplicates()
 status = df['Status_ALL'].tolist()
 
 
-
-
-# Write to CSV
-
-mapping.to_csv(outputname)
-
-# This script is expected to separate all the instance graphs contained in
-# the txt file where all instance graphs are stored (IG_file)
-
-
-
 def split_list(lst, val):
     return [list(group) for k, group in itertools.groupby(lst, lambda x: x == val) if not k]
 
@@ -244,16 +233,12 @@ def spliter(s,spl,ind):
     return [s[:indx].strip(),s[indx+1:].strip()]
 
 
-#df = pd.read_pickle('PermitLog_SE.pkl')
-
-
-mapping = pd.read_csv('mapping.csv')
-
 ###____MOD_B____###
 # Will create "Sub_Instance_graphs" directory if it does not exit
 if not os.path.exists("Sub_Instance_graphs"):
     os.makedirs("Sub_Instance_graphs")
 
+df.sort_values(by=['Index'], inplace=True)
 
 for index, row in df.iterrows():
     prova = row['Status_ALL']
@@ -295,7 +280,8 @@ for index, row in df.iterrows():
             list_to_graph = list_to_graph + inner_list
     with open(f'Sub_Instance_graphs/sub_instance_graph_{index}.g', 'w') as f:
         f.writelines(list_to_graph)
-df.to_pickle('PermitLog_SE.pkl')
+
+df.to_csv('log_ordered_by_index')
 
 
 # Write to CSV
